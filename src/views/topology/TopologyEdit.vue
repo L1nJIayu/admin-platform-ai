@@ -56,7 +56,7 @@
               :class="element.type"
               :style="{ left: element.x + 'px', top: element.y + 'px' }"
               @mousedown="startNodeDrag(element, $event)"
-              @click="selectNode(element); $event.stopPropagation()"
+              @click="handleNodeClick(element, $event)"
               @dblclick="editNodeParams(element)"
             >
               <div class="node-header" :class="element.type">
@@ -398,6 +398,12 @@ function selectNode(node: TopologyNode) {
   selectedNode.value = node
   selectedWire.value = null
   activeTab.value = 'node'
+}
+
+// 处理节点点击
+function handleNodeClick(node: TopologyNode, event: MouseEvent) {
+  event.stopPropagation()
+  selectNode(node)
 }
 
 // 选择导线
