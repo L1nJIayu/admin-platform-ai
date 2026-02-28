@@ -25,7 +25,7 @@
         >
           <template #item="{ element }">
             <div class="toolbox-item" :class="element.type">
-              <el-icon><Box /></el-icon>
+              <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
               <span>{{ element.label }}</span>
             </div>
           </template>
@@ -55,8 +55,8 @@
                 @click="selectNode(element)"
                 @dblclick="editNodeParams(element)"
               >
-                <div class="node-header">
-                  <el-icon><Box /></el-icon>
+                <div class="node-header" :class="element.type">
+                  <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
                   <span>{{ getNodeTypeName(element.type) }}</span>
                 </div>
                 <div class="node-body">
@@ -132,6 +132,43 @@
               <el-form-item label="节点类型">
                 <span>{{ getNodeTypeName(selectedNode.type) }}</span>
               </el-form-item>
+              
+              <!-- 电能表参数 -->
+              <template v-if="selectedNode.type === 'meter'">
+                <el-form-item label="电能误差(%)">
+                  <el-input-number v-model="selectedNode.params.energyError" :precision="2" :step="0.01" :min="0" :max="100" placeholder="请输入电能误差" />
+                </el-form-item>
+                <el-form-item label="时间误差">
+                  <el-input-number v-model="selectedNode.params.timeError" :precision="2" :step="0.01" :min="0" placeholder="请输入时间误差" />
+                </el-form-item>
+              </template>
+              
+              <!-- 变压器参数 -->
+              <template v-else-if="selectedNode.type === 'transformer'">
+                <el-form-item label="额定功率">
+                  <el-input v-model="selectedNode.params.ratedPower" placeholder="如: 100kVA" />
+                </el-form-item>
+                <el-form-item label="电压比">
+                  <el-input v-model="selectedNode.params.voltageRatio" placeholder="如: 10kV/0.4kV" />
+                </el-form-item>
+              </template>
+              
+              <!-- 互感器参数 -->
+              <template v-else-if="selectedNode.type === 'currentTransformer'">
+                <el-form-item label="变比">
+                  <el-input v-model="selectedNode.params.ratio" placeholder="如: 100/5" />
+                </el-form-item>
+                <el-form-item label="准确度等级">
+                  <el-select v-model="selectedNode.params.accuracyClass" placeholder="请选择">
+                    <el-option label="0.5级" value="0.5" />
+                    <el-option label="0.5S级" value="0.5S" />
+                    <el-option label="0.2级" value="0.2" />
+                    <el-option label="0.2S级" value="0.2S" />
+                    <el-option label="0.1级" value="0.1" />
+                  </el-select>
+                </el-form-item>
+              </template>
+              
               <el-form-item label="X坐标">
                 <el-input-number v-model="selectedNode.x" :min="0" :max="canvasWidth" />
               </el-form-item>
@@ -178,7 +215,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Check, Delete, Box } from '@element-plus/icons-vue'
+import { ArrowLeft, Check, Delete, Box, Coin, Lightning, Cpu } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
 import { useTopologyStore } from '@/stores/topology'
 import type { Topology, TopologyNode, TopologyWire, NodeType } from '@/types/topology'
@@ -228,14 +265,31 @@ const connectSource = ref<string | null>(null)
 
 // 克隆节点
 function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
+  // 根据节点类型设置默认参数
+  const defaultParams: Record<NodeType, any> = {
+    meter: {
+      name: `${origin.label}_${Date.now().toString(36)}`,
+      energyError: 0,
+      timeError: 0
+    },
+    transformer: {
+      name: `${origin.label}_${Date.now().toString(36)}`,
+      ratedPower: '',
+      voltageRatio: ''
+    },
+    currentTransformer: {
+      name: `${origin.label}_${Date.now().toString(36)}`,
+      ratio: '',
+      accuracyClass: ''
+    }
+  }
+  
   return {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     type: origin.type,
     x: 50,
     y: 50,
-    params: {
-      name: `${origin.label}_${Date.now().toString(36)}`
-    }
+    params: defaultParams[origin.type]
   }
 }
 
@@ -243,6 +297,16 @@ function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
 function getNodeTypeName(type: NodeType): string {
   const option = NODE_TYPE_OPTIONS.find(o => o.value === type)
   return option?.label || type
+}
+
+// 获取节点图标组件
+function getNodeIcon(type: NodeType) {
+  const icons: Record<NodeType, any> = {
+    meter: Coin,        // 电能表 - Coin
+    transformer: Lightning,  // 变压器 - Lightning
+    currentTransformer: Cpu   // 互感器 - Cpu
+  }
+  return icons[type] || Box
 }
 
 // 处理画布变化
@@ -568,11 +632,28 @@ onMounted(() => {
 .node-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 8px;
   background: #f5f7fa;
   border-bottom: 1px solid #eee;
   font-size: 12px;
+}
+
+.node-header .el-icon {
+  font-size: 18px;
+}
+
+.node-header.meter .el-icon {
+  color: #409eff;
+}
+
+.node-header.transformer .el-icon {
+  color: #e6a23c;
+}
+
+.node-header.currentTransformer .el-icon {
+  color: #67c23a;
 }
 
 .node-body {
@@ -580,6 +661,11 @@ onMounted(() => {
   font-size: 12px;
   text-align: center;
   word-break: break-all;
+}
+
+.node-body.params {
+  font-size: 10px;
+  color: #909399;
 }
 
 .node-actions {

@@ -4,6 +4,15 @@ export type NodeType = 'meter' | 'transformer' | 'currentTransformer'
 // 节点参数
 export interface NodeParams {
   name: string
+  // 电能表参数
+  energyError?: number  // 电能误差（百分比）
+  timeError?: number   // 时间误差
+  // 变压器参数
+  ratedPower?: string  // 额定功率
+  voltageRatio?: string  // 电压比
+  // 互感器参数
+  ratio?: string  // 变比
+  accuracyClass?: string  // 准确度等级
   [key: string]: any
 }
 
