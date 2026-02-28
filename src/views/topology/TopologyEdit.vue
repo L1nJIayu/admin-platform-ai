@@ -1,7 +1,7 @@
 <template>
-  <div class="topology-edit">
+  <div class="h-full flex flex-col p-4">
     <!-- 顶部操作栏 -->
-    <div class="toolbar">
+    <div class="flex justify-between mb-4">
       <el-button @click="handleBack">
         <el-icon><ArrowLeft /></el-icon>
         返回
@@ -12,19 +12,23 @@
       </el-button>
     </div>
 
-    <div class="editor-container">
+    <div class="flex-1 flex gap-4 min-h-0">
       <!-- 左侧：节点工具箱 -->
-      <div class="node-toolbox">
-        <div class="toolbox-title">节点工具箱</div>
+      <div class="w-[150px] bg-white rounded p-3 flex-shrink-0">
+        <div class="font-bold mb-3 pb-2 border-b border-gray-200">节点工具箱</div>
         <draggable
           v-model="toolboxNodes"
           :group="{ name: 'nodes', pull: 'clone', put: false }"
           :clone="cloneNode"
           item-key="type"
-          class="toolbox-list"
+          class="flex flex-col gap-2"
         >
           <template #item="{ element }">
-            <div class="toolbox-item" :class="element.type">
+            <div class="flex items-center gap-2 p-[10px] bg-gray-50 border border-gray-300 rounded cursor-move transition-all hover:border-blue-500 hover:bg-blue-50" :class="{
+              'border-l-2 border-l-blue-500': element.type === 'meter',
+              'border-l-2 border-l-orange-500': element.type === 'transformer',
+              'border-l-2 border-l-green-500': element.type === 'currentTransformer'
+            }">
               <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
               <span>{{ element.label }}</span>
             </div>
@@ -33,49 +37,58 @@
       </div>
 
       <!-- 中间：画布 -->
-      <div class="canvas-container">
-        <div class="canvas-header">
+      <div class="flex-1 flex flex-col bg-white rounded overflow-hidden">
+        <div class="flex justify-between items-center p-3 border-b font-bold">
           <span>拓扑图画布</span>
           <el-button size="small" @click="clearCanvas">清空画布</el-button>
         </div>
-        <div class="canvas" ref="canvasRef">
-          <draggable
-            v-model="topology.nodes"
-            group="nodes"
-            item-key="id"
-            class="canvas-area"
-            :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
-            @change="handleCanvasChange"
+        <div 
+          class="flex-1 relative bg-gray-100 overflow-auto" 
+          ref="canvasRef"
+          :style="{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }"
+          @mousemove="handleMouseMove"
+          @mouseup="handleMouseUp"
+          @mouseleave="handleMouseUp"
+        >
+          <!-- 节点 -->
+          <div
+            v-for="node in topology.nodes"
+            :key="node.id"
+            class="absolute w-[100px] min-h-[60px] bg-white border-2 rounded cursor-move select-none"
+            :class="{
+              'border-blue-500 z-10': selectedNode?.id === node.id,
+              'border-blue-500': node.type === 'meter' && selectedNode?.id !== node.id,
+              'border-orange-500': node.type === 'transformer' && selectedNode?.id !== node.id,
+              'border-green-500': node.type === 'currentTransformer' && selectedNode?.id !== node.id
+            }"
+            :style="{ left: node.x + 'px', top: node.y + 'px' }"
+            @mousedown.stop="startDrag(node, $event)"
+            @click.stop="selectNode(node)"
+            @dblclick.stop="editNodeParams(node)"
           >
-            <template #item="{ element }">
-              <div
-                class="canvas-node"
-                :class="element.type"
-                :style="{ left: element.x + 'px', top: element.y + 'px' }"
-                @click="selectNode(element)"
-                @dblclick="editNodeParams(element)"
-              >
-                <div class="node-header" :class="element.type">
-                  <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
-                  <span>{{ getNodeTypeName(element.type) }}</span>
-                </div>
-                <div class="node-body">
-                  {{ element.params.name }}
-                </div>
-                <div class="node-actions">
-                  <el-button link size="small" type="danger" @click.stop="deleteNode(element.id)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-                <!-- 连接点 -->
-                <div class="connect-point source" @mousedown.stop="startConnect(element.id, $event)"></div>
-                <div class="connect-point target" @mouseup.stop="endConnect(element.id)"></div>
-              </div>
-            </template>
-          </draggable>
+            <div class="flex items-center justify-center gap-1 p-2 bg-gray-50 border-b border-gray-200 text-xs" :class="{
+              'text-blue-500': node.type === 'meter',
+              'text-orange-500': node.type === 'transformer',
+              'text-green-500': node.type === 'currentTransformer'
+            }">
+              <el-icon class="text-lg"><component :is="getNodeIcon(node.type)" /></el-icon>
+              <span>{{ getNodeTypeName(node.type) }}</span>
+            </div>
+            <div class="p-2 text-xs text-center break-all">
+              {{ node.params.name }}
+            </div>
+            <div class="absolute top-1 right-1 opacity-0 hover:opacity-100 transition-opacity">
+              <el-button link size="small" type="danger" @click.stop="deleteNode(node.id)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+            <!-- 连接点 -->
+            <div class="absolute w-2.5 h-2.5 bg-blue-500 rounded-full -left-1 top-1/2 -translate-y-1/2 cursor-crosshair opacity-0 hover:opacity-100 transition-opacity" @mousedown.stop="startConnect(node.id, $event)"></div>
+            <div class="absolute w-2.5 h-2.5 bg-blue-500 rounded-full -right-1 top-1/2 -translate-y-1/2 cursor-crosshair opacity-0 hover:opacity-100 transition-opacity" @mouseup.stop="endConnect(node.id)"></div>
+          </div>
 
           <!-- 临时连线 -->
-          <svg class="temp-wire" v-if="tempWire">
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" v-if="tempWire">
             <line
               :x1="tempWire.x1"
               :y1="tempWire.y1"
@@ -88,7 +101,7 @@
           </svg>
 
           <!-- 已完成的连线 -->
-          <svg class="wires-layer">
+          <svg class="absolute inset-0 w-full h-full pointer-events-auto">
             <g v-for="wire in topology.wires" :key="wire.id">
               <line
                 :x1="getWirePosition(wire.sourceId).x"
@@ -98,7 +111,7 @@
                 stroke="#67c23a"
                 stroke-width="2"
                 @click="selectWire(wire)"
-                style="cursor: pointer"
+                class="cursor-pointer hover:stroke-red-500"
               />
             </g>
           </svg>
@@ -106,11 +119,11 @@
       </div>
 
       <!-- 右侧：属性面板 -->
-      <div class="property-panel">
-        <el-tabs v-model="activeTab">
+      <div class="w-[300px] bg-white rounded flex-shrink-0 overflow-auto">
+        <el-tabs v-model="activeTab" class="h-full">
           <!-- 拓扑图属性 -->
           <el-tab-pane label="拓扑图属性" name="topology">
-            <el-form label-width="100px" class="property-form">
+            <el-form label-width="80px" class="p-3">
               <el-form-item label="拓扑名称">
                 <el-input v-model="topology.params.name" placeholder="请输入拓扑名称" />
               </el-form-item>
@@ -125,7 +138,7 @@
 
           <!-- 节点属性 -->
           <el-tab-pane label="节点属性" name="node" v-if="selectedNode">
-            <el-form label-width="80px" class="property-form">
+            <el-form label-width="80px" class="p-3">
               <el-form-item label="节点名称">
                 <el-input v-model="selectedNode.params.name" />
               </el-form-item>
@@ -136,10 +149,10 @@
               <!-- 电能表参数 -->
               <template v-if="selectedNode.type === 'meter'">
                 <el-form-item label="电能误差(%)">
-                  <el-input-number v-model="selectedNode.params.energyError" :precision="2" :step="0.01" :min="0" :max="100" placeholder="请输入电能误差" />
+                  <el-input-number v-model="selectedNode.params.energyError" :precision="2" :step="0.01" :min="0" :max="100" placeholder="请输入电能误差" class="w-full" />
                 </el-form-item>
                 <el-form-item label="时间误差">
-                  <el-input-number v-model="selectedNode.params.timeError" :precision="2" :step="0.01" :min="0" placeholder="请输入时间误差" />
+                  <el-input-number v-model="selectedNode.params.timeError" :precision="2" :step="0.01" :min="0" placeholder="请输入时间误差" class="w-full" />
                 </el-form-item>
               </template>
               
@@ -159,7 +172,7 @@
                   <el-input v-model="selectedNode.params.ratio" placeholder="如: 100/5" />
                 </el-form-item>
                 <el-form-item label="准确度等级">
-                  <el-select v-model="selectedNode.params.accuracyClass" placeholder="请选择">
+                  <el-select v-model="selectedNode.params.accuracyClass" placeholder="请选择" class="w-full">
                     <el-option label="0.5级" value="0.5" />
                     <el-option label="0.5S级" value="0.5S" />
                     <el-option label="0.2级" value="0.2" />
@@ -170,17 +183,17 @@
               </template>
               
               <el-form-item label="X坐标">
-                <el-input-number v-model="selectedNode.x" :min="0" :max="canvasWidth" />
+                <el-input-number v-model="selectedNode.x" :min="0" :max="canvasWidth" class="w-full" />
               </el-form-item>
               <el-form-item label="Y坐标">
-                <el-input-number v-model="selectedNode.y" :min="0" :max="canvasHeight" />
+                <el-input-number v-model="selectedNode.y" :min="0" :max="canvasHeight" class="w-full" />
               </el-form-item>
             </el-form>
           </el-tab-pane>
 
           <!-- 导线属性 -->
           <el-tab-pane label="导线属性" name="wire" v-if="selectedWire">
-            <el-form label-width="80px" class="property-form">
+            <el-form label-width="80px" class="p-3">
               <el-form-item label="型号">
                 <el-input v-model="selectedWire.params.model" placeholder="请输入型号" />
               </el-form-item>
@@ -188,10 +201,10 @@
                 <el-input v-model="selectedWire.params.wireSize" placeholder="请输入线径" />
               </el-form-item>
               <el-form-item label="长度(m)">
-                <el-input-number v-model="selectedWire.params.length" :min="0" />
+                <el-input-number v-model="selectedWire.params.length" :min="0" class="w-full" />
               </el-form-item>
               <el-form-item label="敷设方式">
-                <el-select v-model="selectedWire.params.installationMethod" placeholder="请选择">
+                <el-select v-model="selectedWire.params.installationMethod" placeholder="请选择" class="w-full">
                   <el-option
                     v-for="item in INSTALLATION_METHOD_OPTIONS"
                     :key="item.value"
@@ -263,9 +276,12 @@ const activeTab = ref('topology')
 const tempWire = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 const connectSource = ref<string | null>(null)
 
+// 拖拽状态
+const draggingNode = ref<TopologyNode | null>(null)
+const dragOffset = ref({ x: 0, y: 0 })
+
 // 克隆节点
 function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
-  // 根据节点类型设置默认参数
   const defaultParams: Record<NodeType, any> = {
     meter: {
       name: `${origin.label}_${Date.now().toString(36)}`,
@@ -302,22 +318,57 @@ function getNodeTypeName(type: NodeType): string {
 // 获取节点图标组件
 function getNodeIcon(type: NodeType) {
   const icons: Record<NodeType, any> = {
-    meter: Coin,        // 电能表 - Coin
-    transformer: Lightning,  // 变压器 - Lightning
-    currentTransformer: Cpu   // 互感器 - Cpu
+    meter: Coin,
+    transformer: Lightning,
+    currentTransformer: Cpu
   }
   return icons[type] || Box
 }
 
-// 处理画布变化
-function handleCanvasChange() {
-  // 更新节点位置
-  topology.nodes.forEach(node => {
-    if (node.x < 0) node.x = 0
-    if (node.y < 0) node.y = 0
-    if (node.x > canvasWidth.value - 100) node.x = canvasWidth.value - 100
-    if (node.y > canvasHeight.value - 60) node.y = canvasHeight.value - 60
-  })
+// 开始拖拽节点
+function startDrag(node: TopologyNode, event: MouseEvent) {
+  draggingNode.value = node
+  const target = event.target as HTMLElement
+  const nodeEl = target.closest('.absolute') as HTMLElement
+  if (nodeEl) {
+    const rect = nodeEl.getBoundingClientRect()
+    dragOffset.value = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    }
+  }
+}
+
+// 拖拽移动
+function handleMouseMove(event: MouseEvent) {
+  // 处理节点拖拽
+  if (draggingNode.value && canvasRef.value) {
+    const rect = canvasRef.value.getBoundingClientRect()
+    const scrollLeft = canvasRef.value.scrollLeft
+    const scrollTop = canvasRef.value.scrollTop
+    
+    let newX = event.clientX - rect.left + scrollLeft - dragOffset.value.x
+    let newY = event.clientY - rect.top + scrollTop - dragOffset.value.y
+    
+    // 边界检查
+    newX = Math.max(0, Math.min(newX, canvasWidth.value - 100))
+    newY = Math.max(0, Math.min(newY, canvasHeight.value - 60))
+    
+    draggingNode.value.x = newX
+    draggingNode.value.y = newY
+  }
+  
+  // 处理连线
+  if (tempWire.value && connectSource.value && canvasRef.value) {
+    const rect = canvasRef.value.getBoundingClientRect()
+    tempWire.value.x2 = event.clientX - rect.left + canvasRef.value.scrollLeft
+    tempWire.value.y2 = event.clientY - rect.top + canvasRef.value.scrollTop
+  }
+}
+
+// 结束拖拽
+function handleMouseUp() {
+  draggingNode.value = null
 }
 
 // 选择节点
@@ -344,7 +395,6 @@ function deleteNode(nodeId: string) {
   const index = topology.nodes.findIndex(n => n.id === nodeId)
   if (index >= 0) {
     topology.nodes.splice(index, 1)
-    // 删除相关的导线
     topology.wires = topology.wires.filter(
       w => w.sourceId !== nodeId && w.targetId !== nodeId
     )
@@ -369,37 +419,19 @@ function deleteSelectedWire() {
 function startConnect(nodeId: string, event: MouseEvent) {
   connectSource.value = nodeId
   const rect = canvasRef.value?.getBoundingClientRect()
-  if (rect) {
+  if (rect && canvasRef.value) {
     tempWire.value = {
-      x1: event.clientX - rect.left,
-      y1: event.clientY - rect.top,
-      x2: event.clientX - rect.left,
-      y2: event.clientY - rect.top
+      x1: event.clientX - rect.left + canvasRef.value.scrollLeft,
+      y1: event.clientY - rect.top + canvasRef.value.scrollTop,
+      x2: event.clientX - rect.left + canvasRef.value.scrollLeft,
+      y2: event.clientY - rect.top + canvasRef.value.scrollTop
     }
   }
-  
-  // 监听鼠标移动
-  const handleMouseMove = (e: MouseEvent) => {
-    if (tempWire.value && rect) {
-      tempWire.value.x2 = e.clientX - rect.left
-      tempWire.value.y2 = e.clientY - rect.top
-    }
-  }
-  
-  // 监听鼠标释放
-  const handleMouseUp = () => {
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-  }
-  
-  document.addEventListener('mousemove', handleMouseMove)
-  document.addEventListener('mouseup', handleMouseUp)
 }
 
 // 结束连接
 function endConnect(nodeId: string) {
   if (connectSource.value && connectSource.value !== nodeId) {
-    // 检查是否已存在连接
     const exists = topology.wires.some(
       w => (w.sourceId === connectSource.value && w.targetId === nodeId) ||
            (w.sourceId === nodeId && w.targetId === connectSource.value)
@@ -440,6 +472,7 @@ function clearCanvas() {
   topology.wires = []
   selectedNode.value = null
   selectedWire.value = null
+  activeTab.value = 'topology'
 }
 
 // 返回
@@ -457,28 +490,27 @@ function handleSave() {
   topology.name = topology.params.name
   topology.description = topology.params.description
   
-  topologyStore.saveTopology({ ...topology })
+  topologyStore.saveTopology(topology)
+  
   ElMessage.success('保存成功')
   router.push('/topology')
 }
 
-// 加载数据
 onMounted(() => {
   const id = route.params.id as string
-  
   if (id === 'new') {
-    // 新建
-    const newTopo = topologyStore.createTopology()
-    topology.id = newTopo.id
-    topology.name = newTopo.name
-    topology.description = newTopo.description
-    topology.createdAt = newTopo.createdAt
-    topology.nodes = newTopo.nodes
-    topology.wires = newTopo.wires
-    topology.params = { ...newTopo.params }
-    topologyStore.setCurrentTopology(topology)
+    topology.id = ''
+    topology.name = ''
+    topology.description = ''
+    topology.createdAt = ''
+    topology.nodes = []
+    topology.wires = []
+    topology.params = {
+      name: '',
+      description: '',
+      load: ''
+    }
   } else {
-    // 编辑
     const existing = topologyStore.getTopologyById(id)
     if (existing) {
       topology.id = existing.id
@@ -493,244 +525,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.topology-edit {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.editor-container {
-  flex: 1;
-  display: flex;
-  gap: 16px;
-  min-height: 0;
-}
-
-/* 工具箱 */
-.node-toolbox {
-  width: 150px;
-  background: #fff;
-  border-radius: 4px;
-  padding: 12px;
-  flex-shrink: 0;
-}
-
-.toolbox-title {
-  font-weight: bold;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.toolbox-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.toolbox-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #f5f7fa;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  cursor: move;
-  transition: all 0.2s;
-}
-
-.toolbox-item:hover {
-  border-color: #409eff;
-  background: #ecf5ff;
-}
-
-.toolbox-item.meter {
-  border-left: 3px solid #409eff;
-}
-
-.toolbox-item.transformer {
-  border-left: 3px solid #e6a23c;
-}
-
-.toolbox-item.currentTransformer {
-  border-left: 3px solid #67c23a;
-}
-
-/* 画布 */
-.canvas-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.canvas-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-  font-weight: bold;
-}
-
-.canvas {
-  flex: 1;
-  position: relative;
-  background: #fafafa;
-  background-image: 
-    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
-  overflow: hidden;
-}
-
-.canvas-area {
-  position: relative;
-  margin: 20px;
-}
-
-/* 画布节点 */
-.canvas-node {
-  position: absolute;
-  width: 100px;
-  min-height: 60px;
-  background: #fff;
-  border: 2px solid #dcdfe6;
-  border-radius: 4px;
-  cursor: move;
-  user-select: none;
-}
-
-.canvas-node:hover {
-  border-color: #409eff;
-}
-
-.canvas-node.meter {
-  border-color: #409eff;
-}
-
-.canvas-node.transformer {
-  border-color: #e6a23c;
-}
-
-.canvas-node.currentTransformer {
-  border-color: #67c23a;
-}
-
-.node-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #eee;
-  font-size: 12px;
-}
-
-.node-header .el-icon {
-  font-size: 18px;
-}
-
-.node-header.meter .el-icon {
-  color: #409eff;
-}
-
-.node-header.transformer .el-icon {
-  color: #e6a23c;
-}
-
-.node-header.currentTransformer .el-icon {
-  color: #67c23a;
-}
-
-.node-body {
-  padding: 8px;
-  font-size: 12px;
-  text-align: center;
-  word-break: break-all;
-}
-
-.node-body.params {
-  font-size: 10px;
-  color: #909399;
-}
-
-.node-actions {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.canvas-node:hover .node-actions {
-  opacity: 1;
-}
-
-/* 连接点 */
-.connect-point {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #409eff;
-  border-radius: 50%;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: crosshair;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.canvas-node:hover .connect-point {
-  opacity: 1;
-}
-
-.connect-point.source {
-  left: -5px;
-}
-
-.connect-point.target {
-  right: -5px;
-}
-
-/* 连线 */
-.temp-wire,
-.wires-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.wires-layer {
-  pointer-events: auto;
-}
-
-/* 属性面板 */
-.property-panel {
-  width: 300px;
-  background: #fff;
-  border-radius: 4px;
-  flex-shrink: 0;
-  overflow: auto;
-}
-
-.property-form {
-  padding: 12px;
-}
-</style>
