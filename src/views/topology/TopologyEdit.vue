@@ -43,41 +43,38 @@
           @mouseup="handleCanvasMouseUp"
           @mouseleave="handleCanvasMouseUp"
         >
-          <draggable
-            v-model="topology.nodes"
-            group="nodes"
-            item-key="id"
+          <!-- 使用 v-for 渲染节点，拖拽功能由自定义 handlers 处理 -->
+          <div
             class="canvas-area"
             :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
-            @add="handleCanvasNodeAdd"
           >
-            <template #item="{ element }">
-              <div
-                class="canvas-node"
-                :class="element.type"
-                :style="{ left: element.x + 'px', top: element.y + 'px' }"
-                @mousedown="startNodeDrag(element, $event)"
-                @click="selectNode(element)"
-                @dblclick="editNodeParams(element)"
-              >
-                <div class="node-header" :class="element.type">
-                  <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
-                  <span>{{ getNodeTypeName(element.type) }}</span>
-                </div>
-                <div class="node-body">
-                  {{ element.params.name }}
-                </div>
-                <div class="node-actions">
-                  <el-button link size="small" type="danger" @click.stop="deleteNode(element.id)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-                <!-- 连接点 -->
-                <div class="connect-point source" @mousedown.stop="startConnect(element.id, $event)"></div>
-                <div class="connect-point target" @mouseup.stop="endConnect(element.id)"></div>
+            <div
+              v-for="element in topology.nodes"
+              :key="element.id"
+              class="canvas-node"
+              :class="element.type"
+              :style="{ left: element.x + 'px', top: element.y + 'px' }"
+              @mousedown="startNodeDrag(element, $event)"
+              @click="selectNode(element); $event.stopPropagation()"
+              @dblclick="editNodeParams(element)"
+            >
+              <div class="node-header" :class="element.type">
+                <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
+                <span>{{ getNodeTypeName(element.type) }}</span>
               </div>
-            </template>
-          </draggable>
+              <div class="node-body">
+                {{ element.params.name }}
+              </div>
+              <div class="node-actions">
+                <el-button link size="small" type="danger" @click.stop="deleteNode(element.id)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+              <!-- 连接点 -->
+              <div class="connect-point source" @mousedown.stop="startConnect(element.id, $event)"></div>
+              <div class="connect-point target" @mouseup.stop="endConnect(element.id)"></div>
+            </div>
+          </div>
 
           <!-- 临时连线 -->
           <svg class="temp-wire" v-if="tempWire">
@@ -275,7 +272,6 @@ const nodeStartPos = ref({ x: 0, y: 0 })
 
 // 克隆节点
 function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
-  // 根据节点类型设置默认参数
   const defaultParams: Record<NodeType, any> = {
     meter: {
       name: `${origin.label}_${Date.now().toString(36)}`,
@@ -297,8 +293,8 @@ function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     type: origin.type,
-    x: 50,
-    y: 50,
+    x: 50,  // 默认位置
+    y: 50,  // 默认位置
     params: defaultParams[origin.type]
   }
 }
@@ -354,16 +350,6 @@ function handleCanvasMouseUp() {
     node.y = Math.max(0, Math.min(node.y, canvasHeight.value - 60))
   }
   draggingNode.value = null
-}
-
-// 节点添加到画布 - 设置位置
-function handleCanvasNodeAdd(event: any) {
-  const index = event.newIndex
-  if (topology.nodes[index]) {
-    // 默认位置在画布中央
-    topology.nodes[index].x = 50
-    topology.nodes[index].y = 50
-  }
 }
 
 // 选择节点
