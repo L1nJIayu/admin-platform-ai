@@ -43,37 +43,41 @@
           @mouseup="handleCanvasMouseUp"
           @mouseleave="handleCanvasMouseUp"
         >
-          <div
+          <draggable
+            v-model="topology.nodes"
+            group="nodes"
+            item-key="id"
             class="canvas-area"
             :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
+            @add="handleCanvasNodeAdd"
           >
-            <div
-              v-for="element in topology.nodes"
-              :key="element.id"
-              class="canvas-node"
-              :class="element.type"
-              :style="{ left: element.x + 'px', top: element.y + 'px' }"
-              @mousedown="startNodeDrag(element, $event)"
-              @click="selectNode(element)"
-              @dblclick="editNodeParams(element)"
-            >
-              <div class="node-header" :class="element.type">
-                <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
-                <span>{{ getNodeTypeName(element.type) }}</span>
+            <template #item="{ element }">
+              <div
+                class="canvas-node"
+                :class="element.type"
+                :style="{ left: element.x + 'px', top: element.y + 'px' }"
+                @mousedown="startNodeDrag(element, $event)"
+                @click="selectNode(element)"
+                @dblclick="editNodeParams(element)"
+              >
+                <div class="node-header" :class="element.type">
+                  <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
+                  <span>{{ getNodeTypeName(element.type) }}</span>
+                </div>
+                <div class="node-body">
+                  {{ element.params.name }}
+                </div>
+                <div class="node-actions">
+                  <el-button link size="small" type="danger" @click.stop="deleteNode(element.id)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
+                <!-- 连接点 -->
+                <div class="connect-point source" @mousedown.stop="startConnect(element.id, $event)"></div>
+                <div class="connect-point target" @mouseup.stop="endConnect(element.id)"></div>
               </div>
-              <div class="node-body">
-                {{ element.params.name }}
-              </div>
-              <div class="node-actions">
-                <el-button link size="small" type="danger" @click.stop="deleteNode(element.id)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </div>
-              <!-- 连接点 -->
-              <div class="connect-point source" @mousedown.stop="startConnect(element.id, $event)"></div>
-              <div class="connect-point target" @mouseup.stop="endConnect(element.id)"></div>
-            </div>
-          </div>
+            </template>
+          </draggable>
 
           <!-- 临时连线 -->
           <svg class="temp-wire" v-if="tempWire">
@@ -343,7 +347,23 @@ function handleCanvasMouseMove(event: MouseEvent) {
 
 // 画布鼠标释放 - 结束拖拽
 function handleCanvasMouseUp() {
+  if (draggingNode.value) {
+    // 确保节点在边界内
+    const node = draggingNode.value
+    node.x = Math.max(0, Math.min(node.x, canvasWidth.value - 100))
+    node.y = Math.max(0, Math.min(node.y, canvasHeight.value - 60))
+  }
   draggingNode.value = null
+}
+
+// 节点添加到画布 - 设置位置
+function handleCanvasNodeAdd(event: any) {
+  const index = event.newIndex
+  if (topology.nodes[index]) {
+    // 默认位置在画布中央
+    topology.nodes[index].x = 50
+    topology.nodes[index].y = 50
+  }
 }
 
 // 选择节点
