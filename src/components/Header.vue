@@ -1,16 +1,16 @@
 <template>
-  <header class="app-header">
-    <div class="header-left">
-      <div class="logo">
+  <header class="h-[60px] bg-white flex items-center justify-between px-6 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center">
         <el-icon :size="28" color="#409EFF"><Monitor /></el-icon>
       </div>
-      <h1 class="title">后台管理系统</h1>
+      <h1 class="text-lg font-semibold text-gray-700 m-0">后台管理系统</h1>
     </div>
     
-    <div class="header-right">
-      <div class="user-info">
+    <div class="flex items-center gap-5">
+      <div class="flex items-center gap-2 text-gray-500">
         <el-icon><User /></el-icon>
-        <span class="username">{{ username }}</span>
+        <span class="text-sm">{{ username }}</span>
       </div>
       <el-button 
         type="danger" 
@@ -37,51 +37,3 @@ function handleLogout() {
   userStore.logout()
 }
 </script>
-
-<style scoped>
-.app-header {
-  height: 60px;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #606266;
-}
-
-.username {
-  font-size: 14px;
-}
-</style>

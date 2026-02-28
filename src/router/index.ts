@@ -6,7 +6,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue')
+    component: () => import('@/views/auth/Login.vue')
   },
   {
     path: '/',
@@ -16,19 +16,19 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/home',
         name: 'Home',
-        component: () => import('@/views/Home.vue'),
+        component: () => import('@/views/dashboard/Home.vue'),
         meta: { title: '首页' }
       },
       {
         path: '/topology',
         name: 'TopologyList',
-        component: () => import('@/views/TopologyList.vue'),
+        component: () => import('@/views/topology/TopologyList.vue'),
         meta: { title: '台区拓扑图' }
       },
       {
         path: '/topology/edit/:id',
         name: 'TopologyEdit',
-        component: () => import('@/views/TopologyEdit.vue'),
+        component: () => import('@/views/topology/TopologyEdit.vue'),
         meta: { title: '编辑拓扑图' }
       }
     ],

@@ -1,16 +1,16 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <el-icon class="logo-icon" :size="48"><Monitor /></el-icon>
-        <h1 class="title">后台管理系统</h1>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-5">
+    <div class="w-full max-w-[400px] bg-white/98 rounded-2xl p-10 shadow-2xl">
+      <div class="text-center mb-8">
+        <el-icon class="logo-icon text-[#409EFF] mb-3" :size="48"><Monitor /></el-icon>
+        <h1 class="text-2xl font-semibold text-gray-700 m-0">后台管理系统</h1>
       </div>
       
       <el-form
         ref="formRef"
         :model="loginForm"
         :rules="rules"
-        class="login-form"
+        class="mt-6"
         @submit.prevent="handleLogin"
       >
         <el-form-item prop="username">
@@ -38,7 +38,7 @@
           <el-button
             type="primary"
             size="large"
-            class="login-button"
+            class="w-full rounded-lg text-base font-medium bg-[#409EFF] border-[#409EFF]"
             :loading="loading"
             @click="handleLogin"
           >
@@ -47,8 +47,8 @@
         </el-form-item>
       </el-form>
       
-      <div class="login-tip">
-        <p>用户名: admin | 密码: 123456</p>
+      <div class="text-center mt-5 text-gray-400 text-sm">
+        <p class="m-0">用户名: admin | 密码: 123456</p>
       </div>
     </div>
   </div>
@@ -101,73 +101,3 @@ async function handleLogin() {
   })
 }
 </script>
-
-<style scoped>
-.login-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 20px;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.logo-icon {
-  color: #409EFF;
-  margin-bottom: 12px;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0;
-}
-
-.login-form {
-  margin-top: 24px;
-}
-
-.login-form :deep(.el-input__wrapper) {
-  border-radius: 8px;
-}
-
-.login-button {
-  width: 100%;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  background: #409EFF;
-  border-color: #409EFF;
-}
-
-.login-button:hover {
-  background: #66b1ff;
-  border-color: #66b1ff;
-}
-
-.login-tip {
-  text-align: center;
-  margin-top: 20px;
-  color: #909399;
-  font-size: 13px;
-}
-
-.login-tip p {
-  margin: 0;
-}
-</style>

@@ -1,9 +1,9 @@
 <template>
-  <div class="topology-list">
+  <div class="p-5">
     <!-- 搜索区域 -->
-    <el-card class="search-card" shadow="never">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="拓扑名称">
+    <el-card class="mb-4" shadow="never">
+      <el-form :inline="true" :model="searchForm" class="flex flex-wrap gap-2">
+        <el-form-item label="拓扑名称" class="mb-0">
           <el-input
             v-model="searchForm.name"
             placeholder="请输入拓扑名称"
@@ -11,7 +11,7 @@
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="mb-0">
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             查询
@@ -25,7 +25,7 @@
     </el-card>
 
     <!-- 操作按钮 -->
-    <div class="action-bar">
+    <div class="mb-4">
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增拓扑图
@@ -33,8 +33,8 @@
     </div>
 
     <!-- 表格区域 -->
-    <el-card class="table-card" shadow="never">
-      <el-table :data="tableData" stripe border style="width: 100%">
+    <el-card shadow="never">
+      <el-table :data="tableData" stripe border class="w-full">
         <el-table-column prop="name" label="拓扑名称" min-width="180" />
         <el-table-column prop="description" label="描述" min-width="250" />
         <el-table-column prop="createdAt" label="创建时间" min-width="180" />
@@ -51,7 +51,7 @@
       </el-table>
 
       <!-- 分页 -->
-      <div class="pagination-container">
+      <div class="flex justify-end mt-4">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -154,33 +154,3 @@ onMounted(() => {
   loadData()
 })
 </script>
-
-<style scoped>
-.topology-list {
-  padding: 20px;
-}
-
-.search-card {
-  margin-bottom: 16px;
-}
-
-.search-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.action-bar {
-  margin-bottom: 16px;
-}
-
-.table-card {
-  margin-bottom: 16px;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-</style>

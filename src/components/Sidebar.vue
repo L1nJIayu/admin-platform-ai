@@ -1,6 +1,6 @@
 <template>
-  <aside class="sidebar" :class="{ collapsed: isCollapsed }">
-    <div class="sidebar-toggle" @click="toggleSidebar">
+  <aside class="w-[200px] min-w-[200px] bg-[#001529] h-full relative transition-all duration-300 overflow-hidden" :class="{ 'w-16 min-w-16': isCollapsed }">
+    <div class="h-10 flex items-center justify-center text-[#bfcbd9] cursor-pointer border-b border-white/10 hover:bg-white/5 transition-colors" @click="toggleSidebar">
       <el-icon :size="20">
         <Fold v-if="!isCollapsed" />
         <Expand v-else />
@@ -9,7 +9,8 @@
     
     <el-menu
       :default-active="activeMenu"
-      class="sidebar-menu"
+      class="border-r-0 h-[calc(100%-40px)] overflow-y-auto"
+      :class="{ 'w-16': isCollapsed }"
       :collapse="isCollapsed"
       :collapse-transition="false"
       background-color="#001529"
@@ -51,57 +52,15 @@ function toggleSidebar() {
 }
 </script>
 
-<style scoped>
-.sidebar {
-  width: 200px;
-  min-width: 200px;
-  background: #001529;
-  height: 100%;
-  position: relative;
-  transition: all 0.3s ease;
-  overflow: hidden;
+<style>
+.el-menu-item {
+  height: 50px !important;
+  line-height: 50px !important;
 }
-
-.sidebar.collapsed {
-  width: 64px;
-  min-width: 64px;
-}
-
-.sidebar-toggle {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #bfcbd9;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: background 0.3s;
-}
-
-.sidebar-toggle:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.sidebar-menu {
-  border-right: none;
-  height: calc(100% - 40px);
-  overflow-y: auto;
-}
-
-.sidebar-menu:not(.el-menu--collapse) {
-  width: 200px;
-}
-
-.sidebar-menu :deep(.el-menu-item) {
-  height: 50px;
-  line-height: 50px;
-}
-
-.sidebar-menu :deep(.el-menu-item.is-active) {
+.el-menu-item.is-active {
   background: #409EFF !important;
 }
-
-.sidebar-menu :deep(.el-menu-item:hover) {
+.el-menu-item:hover {
   background: rgba(64, 158, 255, 0.2) !important;
 }
 </style>
