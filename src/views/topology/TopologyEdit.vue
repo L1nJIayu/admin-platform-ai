@@ -16,20 +16,19 @@
       <!-- 左侧：节点工具箱 -->
       <div class="node-toolbox">
         <div class="toolbox-title">节点工具箱</div>
-        <draggable
-          v-model="toolboxNodes"
-          :group="{ name: 'nodes', pull: 'clone', put: false }"
-          :clone="cloneNode"
-          item-key="type"
-          class="toolbox-list"
-        >
-          <template #item="{ element }">
-            <div class="toolbox-item" :class="element.type">
-              <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
-              <span>{{ element.label }}</span>
-            </div>
-          </template>
-        </draggable>
+        <div class="toolbox-list">
+          <div
+            v-for="element in toolboxNodes"
+            :key="element.type"
+            class="toolbox-item"
+            :class="element.type"
+            draggable="true"
+            @dragstart="startToolboxDrag(element, $event)"
+          >
+            <el-icon><component :is="getNodeIcon(element.type)" /></el-icon>
+            <span>{{ element.label }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- 中间：画布 -->
@@ -42,6 +41,8 @@
           @mousemove="handleCanvasMouseMove"
           @mouseup="handleCanvasMouseUp"
           @mouseleave="handleCanvasMouseUp"
+          @dragover.prevent
+          @drop="handleCanvasDrop"
         >
           <!-- 使用 v-for 渲染节点，拖拽功能由自定义 handlers 处理 -->
           <div
@@ -218,7 +219,6 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Check, Delete, Box, Coin, Lightning, Cpu } from '@element-plus/icons-vue'
-import draggable from 'vuedraggable'
 import { useTopologyStore } from '@/stores/topology'
 import type { Topology, TopologyNode, TopologyWire, NodeType } from '@/types/topology'
 import { NODE_TYPE_OPTIONS, INSTALLATION_METHOD_OPTIONS } from '@/types/topology'
@@ -270,21 +270,62 @@ const draggingNode = ref<TopologyNode | null>(null)
 const dragStartPos = ref({ x: 0, y: 0 })
 const nodeStartPos = ref({ x: 0, y: 0 })
 
-// 克隆节点
-function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
+// 工具箱拖拽状态
+const toolboxDragType = ref<NodeType | null>(null)
+
+// 开始从工具箱拖拽
+function startToolboxDrag(element: { type: NodeType; label: string }, event: DragEvent) {
+  toolboxDragType.value = element.type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'copy'
+    event.dataTransfer.setData('text/plain', element.type)
+  }
+}
+
+// 画布放置 - 添加节点
+function handleCanvasDrop(event: DragEvent) {
+  if (!event.dataTransfer || !toolboxDragType.value || !canvasRef.value) return
+  
+  const rect = canvasRef.value.getBoundingClientRect()
+  const scrollLeft = canvasRef.value.scrollLeft
+  const scrollTop = canvasRef.value.scrollTop
+  
+  // 计算放置位置
+  let x = event.clientX - rect.left + scrollLeft - 50  // 减去节点宽度的一半
+  let y = event.clientY - rect.top + scrollTop - 30    // 减去节点高度的一半
+  
+  // 边界检查
+  x = Math.max(0, Math.min(x, canvasWidth.value - 100))
+  y = Math.max(0, Math.min(y, canvasHeight.value - 60))
+  
+  // 创建新节点
+  const newNode = createNode(toolboxDragType.value, x, y)
+  topology.nodes.push(newNode)
+  
+  toolboxDragType.value = null
+}
+
+// 创建节点
+function createNode(type: NodeType, x: number, y: number): TopologyNode {
+  const typeLabel: Record<NodeType, string> = {
+    meter: '电能表',
+    transformer: '变压器',
+    currentTransformer: '互感器'
+  }
+  
   const defaultParams: Record<NodeType, any> = {
     meter: {
-      name: `${origin.label}_${Date.now().toString(36)}`,
+      name: `${typeLabel[type]}_${Date.now().toString(36)}`,
       energyError: 0,
       timeError: 0
     },
     transformer: {
-      name: `${origin.label}_${Date.now().toString(36)}`,
+      name: `${typeLabel[type]}_${Date.now().toString(36)}`,
       ratedPower: '',
       voltageRatio: ''
     },
     currentTransformer: {
-      name: `${origin.label}_${Date.now().toString(36)}`,
+      name: `${typeLabel[type]}_${Date.now().toString(36)}`,
       ratio: '',
       accuracyClass: ''
     }
@@ -292,10 +333,10 @@ function cloneNode(origin: { type: NodeType; label: string }): TopologyNode {
   
   return {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-    type: origin.type,
-    x: 50,  // 默认位置
-    y: 50,  // 默认位置
-    params: defaultParams[origin.type]
+    type: type,
+    x: x,
+    y: y,
+    params: defaultParams[type]
   }
 }
 
