@@ -21,6 +21,17 @@
         <el-icon><HomeFilled /></el-icon>
         <template #title>首页</template>
       </el-menu-item>
+      
+      <el-sub-menu index="/topology-group">
+        <template #title>
+          <el-icon><Connection /></el-icon>
+          <span>台区拓扑图</span>
+        </template>
+        <el-menu-item index="/topology">
+          <el-icon><List /></el-icon>
+          <template #title>拓扑列表</template>
+        </el-menu-item>
+      </el-sub-menu>
     </el-menu>
   </aside>
 </template>
@@ -28,7 +39,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Fold, Expand, HomeFilled } from '@element-plus/icons-vue'
+import { Fold, Expand, HomeFilled, Connection, List } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const isCollapsed = ref(false)

@@ -18,6 +18,18 @@ const routes: RouteRecordRaw[] = [
         name: 'Home',
         component: () => import('@/views/Home.vue'),
         meta: { title: '首页' }
+      },
+      {
+        path: '/topology',
+        name: 'TopologyList',
+        component: () => import('@/views/TopologyList.vue'),
+        meta: { title: '台区拓扑图' }
+      },
+      {
+        path: '/topology/edit/:id',
+        name: 'TopologyEdit',
+        component: () => import('@/views/TopologyEdit.vue'),
+        meta: { title: '编辑拓扑图' }
       }
     ],
     meta: { requiresAuth: true }

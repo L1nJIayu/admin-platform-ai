@@ -31,7 +31,6 @@ import Sidebar from '@/components/Sidebar.vue'
 .main-content {
   flex: 1;
   background: #f0f2f5;
-  padding: 24px;
   overflow-y: auto;
 }
 </style>
